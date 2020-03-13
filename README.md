@@ -9,7 +9,7 @@ This repository provides the code for the paper *Unified Image and Video Salienc
 
 ```bibtex
 @ARTICLE{drostejiao2020,
-       author = {{Jiao}, Jianbo and {Droste}, Richard and {Noble}, J. Alison},
+       author = {{Droste}, Richard and {Jiao}, Jianbo and {Noble}, J. Alison},
         title = "{Unified Image and Video Saliency Modeling}",
       journal = {arXiv e-prints},
      keywords = {Computer Science - Computer Vision and Pattern Recognition, Computer Science - Machine Learning},
