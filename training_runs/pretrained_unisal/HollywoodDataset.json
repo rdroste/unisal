@@ -1,0 +1,1 @@
+{"out_size": [224, 416], "val_size": 75, "n_images_file": null, "seq_per_vid_val": 1, "register_file": "train_hollywood_register.json", "phase": "train", "frame_modulo": 4, "seq_len": 12}

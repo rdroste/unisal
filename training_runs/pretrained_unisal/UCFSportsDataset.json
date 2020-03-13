@@ -1,0 +1,1 @@
+{"out_size": [256, 384], "val_size": 10, "n_images_file": null, "seq_per_vid_val": 1, "register_file": "train_ucfsports_register.json", "phase": "train", "frame_modulo": 4, "seq_len": 12}

@@ -1,0 +1,1 @@
+Download the example [.zip file](https://drive.google.com/file/d/1Rbz5rnyKlUhLhw8Ko9tgZDU1rCtGYRFL/view?usp=sharing) or [.tar.gz file](https://drive.google.com/file/d/1FM4tT0lkaNqFzrWV4N4fNnzfPuUormXD/view?usp=sharing) and extract the contents into this `examples` folder.
