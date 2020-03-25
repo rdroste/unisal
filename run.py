@@ -66,7 +66,7 @@ def predictions_from_folder(
 
 
 def predict_examples(train_id=None):
-    for example_folder in (Path(".").resolve() / "examples").glob("*"):
+    for example_folder in (Path(__file__).resolve().parent / "examples").glob("*"):
         if not example_folder.is_dir():
             continue
 

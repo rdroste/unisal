@@ -26,7 +26,7 @@ from . import data
 
 cv2.setNumThreads(0)
 
-parent_dir = Path(".").resolve()
+parent_dir = Path(__file__).resolve().parent.parent
 if "TRAIN_DIR" not in os.environ:
     os.environ["TRAIN_DIR"] = str(parent_dir / "training_runs")
 if "PRED_DIR" not in os.environ:
@@ -1204,8 +1204,6 @@ class Trainer(utils.KwConfigClass):
             '.gitignore',
             'unisal/__init__.py',
             'unisal/data.py',
-            'unisal/dhf1k_n_images.dat',
-            'unisal/hollywood_register.json',
             'unisal/model.py',
             'unisal/models/MobileNetV2.py',
             'unisal/models/__init__.py',
@@ -1213,9 +1211,14 @@ class Trainer(utils.KwConfigClass):
             'unisal/models/weights/mobilenet_v2.pth.tar',
             'unisal/salience_metrics.py',
             'unisal/train.py',
-            'unisal/ucfsports_register.json',
             'unisal/utils.py',
             'run.py',
+            'unisal/dhf1k_n_images.dat',
+            'unisal/cache/img_size_dict.json',
+            'unisal/cache/train_hollywood_register.json',
+            'unisal/cache/train_ucfsports_register.json',
+            'unisal/cache/test_hollywood_register.json',
+            'unisal/cache/test_ucfsports_register.json',
         ]
         for file in tracked_files:
             subdir = Path(file).parent

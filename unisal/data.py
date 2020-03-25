@@ -17,7 +17,7 @@ import scipy.io
 
 from . import utils
 
-default_data_dir = Path(".").resolve() / "data"
+default_data_dir = Path(__file__).resolve().parent.parent / "data"
 
 # Set default paths
 if "DHF1K_DATA_DIR" not in os.environ:
@@ -33,7 +33,7 @@ if "MIT300_DATA_DIR" not in os.environ:
     os.environ["MIT300_DATA_DIR"] = str(default_data_dir / "MIT300")
 if "MIT1003_DATA_DIR" not in os.environ:
     os.environ["MIT1003_DATA_DIR"] = str(default_data_dir / "MIT1003")
-config_path = Path(__file__).resolve().parent
+config_path = Path(__file__).resolve().parent / "cache"
 
 
 def get_dataset():
@@ -453,7 +453,7 @@ class MIT1003Dataset(Dataset, utils.KwConfigClass):
             assert((self.fix_dir / all_image_files[-1]['map']).exists())
             assert((self.fix_dir / all_image_files[-1]['pts']).exists())
 
-        size_dict_file = Path(".").resolve() / "img_size_dict.json"
+        size_dict_file = config_path / "img_size_dict.json"
         if size_dict_file.exists():
             with open(size_dict_file, 'r') as f:
                 size_dict = json.load(f)
@@ -621,7 +621,7 @@ class DHF1KDataset(Dataset, utils.KwConfigClass):
     @property
     def n_images_dict(self):
         if self._n_images_dict is None:
-            with open(config_path / self.n_images_file, 'r') as f:
+            with open(config_path.parent / self.n_images_file, 'r') as f:
                 self._n_images_dict = {
                     idx + 1: int(line) for idx, line in enumerate(f)
                     if idx + 1 in self.vid_nr_array}
@@ -808,7 +808,7 @@ class HollywoodDataset(DHF1KDataset):
 
     def get_register(self):
         if self.register is None:
-            register_file = Path('.').resolve() / self.register_file
+            register_file = config_path / self.register_file
             if register_file.exists():
                 with open(config_path / register_file, 'r') as f:
                     self.register = json.load(f)
@@ -983,7 +983,7 @@ class UCFSportsDataset(DHF1KDataset):
 
     def get_register(self):
         if self.register is None:
-            register_file = Path('.').resolve() / self.register_file
+            register_file = config_path / self.register_file
             if register_file.exists():
                 with open(config_path / register_file, 'r') as f:
                     self.register = json.load(f)

@@ -153,7 +153,7 @@ class MobileNetV2(nn.Module):
 
         if self.pretrained:
             state_dict = torch.load(
-                Path(__file__).parent / 'weights/mobilenet_v2.pth.tar')
+                Path(__file__).resolve().parent / 'weights/mobilenet_v2.pth.tar')
             self.load_state_dict(state_dict, strict=False)
         else:
             self._initialize_weights()
