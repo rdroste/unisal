@@ -44,7 +44,9 @@ We provide demo code that generates saliency predictions for example files from 
 The predictions are generated with the pretrained weights in *training_runs/pretrained_unisal*.  
 Follow these steps:
 
-1. Download the example [.zip file](https://drive.google.com/file/d/1Rbz5rnyKlUhLhw8Ko9tgZDU1rCtGYRFL/view?usp=sharing) or [.tar.gz file](https://drive.google.com/file/d/1FM4tT0lkaNqFzrWV4N4fNnzfPuUormXD/view?usp=sharing) and extract the contents into the `examples` of the repository folder
+1. Download the following example files and extract the contents into the `examples` of the repository folder:  
+Google Drive: [.zip file](https://drive.google.com/file/d/1Rbz5rnyKlUhLhw8Ko9tgZDU1rCtGYRFL/view?usp=sharing) or [.tar.gz file](https://drive.google.com/file/d/1FM4tT0lkaNqFzrWV4N4fNnzfPuUormXD/view?usp=sharing)  
+Baidu Pan: [.zip file](https://pan.baidu.com/s/1tz1jaBtfSAVKZld77pAg_Q) (password: mp3y) or [.tar.gz file](https://pan.baidu.com/s/1hwWX4g3unDVQdfDyxRKvIA) (password: ixdd)
 
 2. Generate the demo predictions for the examples by running
 `python run.py predict_examples`
