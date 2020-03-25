@@ -1,32 +1,17 @@
 # Unified Image and Video Saliency Prediction
 
 
-This repository provides the code for the paper *Unified Image and Video Saliency Prediction* by R. Droste, J. Jiao and J. Alison Noble.
+This repository provides the code for the paper [*Unified Image and Video Saliency Prediction*](https://arxiv.org/abs/2003.05477) by [Richard Droste](https://rdroste.com/), [Jianbo Jiao](https://jianbojiao.com/) and [J. Alison Noble](https://eng.ox.ac.uk/people/alison-noble/).
 
-[https://arxiv.org/abs/2003.05477](https://arxiv.org/abs/2003.05477)
-
-[YouTube](https://www.youtube.com/watch?v=4CqMPDI6BqE)
-
-```bibtex
-@ARTICLE{drostejiao2020,
-       author = {{Droste}, Richard and {Jiao}, Jianbo and {Noble}, J. Alison},
-        title = "{Unified Image and Video Saliency Modeling}",
-      journal = {arXiv e-prints},
-     keywords = {Computer Science - Computer Vision and Pattern Recognition, Computer Science - Machine Learning},
-         year = 2020,
-        month = mar,
-          eid = {arXiv:2003.05477},
-        pages = {arXiv:2003.05477},
-archivePrefix = {arXiv},
-       eprint = {2003.05477},
- primaryClass = {cs.CV}
-}
-```
+* [https://arxiv.org/abs/2003.05477](https://arxiv.org/abs/2003.05477)
+* [Official Benchmark](https://mmcheng.net/videosal/)
+* [YouTube](https://www.youtube.com/watch?v=4CqMPDI6BqE)
+* [BibTeX](https://github.com/rdroste/unisal/blob/master/figures/unisal.bib)
 
 ---
 <img src="https://github.com/rdroste/unisal/blob/master/figures/teaser.png" alt="Performance overview" width="50%">
 
-Comparison of UNISAL with current state-of-the-art methods on the DHF1K benchmark
+Comparison of UNISAL with current state-of-the-art methods on the [DHF1K Benchmark](https://mmcheng.net/videosal/)
 
 ---
 
