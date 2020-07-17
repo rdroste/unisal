@@ -1,7 +1,9 @@
 # Unified Image and Video Saliency Prediction
 
 
-This repository provides the code for the paper [*Unified Image and Video Saliency Prediction*](https://arxiv.org/abs/2003.05477) by [Richard Droste](https://rdroste.com/), [Jianbo Jiao](https://jianbojiao.com/) and [J. Alison Noble](https://eng.ox.ac.uk/people/alison-noble/).
+This repository provides the code for the paper:
+
+[Richard Droste](https://rdroste.com/), [Jianbo Jiao](https://jianbojiao.com/) and [J. Alison Noble](https://eng.ox.ac.uk/people/alison-noble/). [*Unified Image and Video Saliency Prediction*](https://arxiv.org/abs/2003.05477). In: ECCV (2020).
 
 * [https://arxiv.org/abs/2003.05477](https://arxiv.org/abs/2003.05477)
 * [Official Benchmark](https://mmcheng.net/videosal/)
