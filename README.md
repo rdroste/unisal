@@ -5,10 +5,19 @@ This repository provides the code for the paper:
 
 [Richard Droste](https://rdroste.com/), [Jianbo Jiao](https://jianbojiao.com/) and [J. Alison Noble](https://eng.ox.ac.uk/people/alison-noble/). [*Unified Image and Video Saliency Prediction*](https://arxiv.org/abs/2003.05477). In: ECCV (2020).
 
+If you use UNISAL, please cite the following [BibTeX entry](https://github.com/rdroste/unisal/blob/master/figures/unisal.bib):
+```
+@inproceedings{drostejiao2020,
+     author = {{Droste}, Richard and {Jiao}, Jianbo and {Noble}, J. Alison},
+      title = "{Unified Image and Video Saliency Modeling}",
+  booktitle = {Proceedings of the 16th European Conference on Computer Vision (ECCV)},
+       year = {2020},
+}
+```
+
 * [https://arxiv.org/abs/2003.05477](https://arxiv.org/abs/2003.05477)
 * [Official Benchmark](https://mmcheng.net/videosal/)
 * [YouTube](https://www.youtube.com/watch?v=4CqMPDI6BqE)
-* [BibTeX](https://github.com/rdroste/unisal/blob/master/figures/unisal.bib)
 
 ---
 <img src="https://github.com/rdroste/unisal/blob/master/figures/teaser.png" alt="Performance overview" width="50%">
