@@ -17,7 +17,9 @@ If you use UNISAL, please cite the following [BibTeX entry](https://github.com/r
 
 * [https://arxiv.org/abs/2003.05477](https://arxiv.org/abs/2003.05477)
 * [Official Benchmark](https://mmcheng.net/videosal/)
-* [YouTube](https://www.youtube.com/watch?v=4CqMPDI6BqE)
+* [Supplementary Video](https://www.youtube.com/watch?v=4CqMPDI6BqE)
+* [ECCV Full Spotlight Presentation](https://www.youtube.com/watch?v=9pnxkgLrceo) (10min)
+* [ECCV Short Presentation](https://www.youtube.com/watch?v=k6AX_7Blu_s) (90s)
 
 ---
 <img src="https://github.com/rdroste/unisal/blob/master/figures/teaser.png" alt="Performance overview" width="50%">
