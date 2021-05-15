@@ -60,6 +60,11 @@ def generate_predictions(
 def predictions_from_folder(
         folder_path, is_video, source=None, train_id=None, model_domain=None):
     """Generate predictions of files in a folder with a trained model."""
+
+    # Allows us to call this function directly from command-line
+    folder_path = Path(folder_path).resolve()
+    is_video = bool(is_video)
+
     trainer = load_trainer(train_id)
     trainer.generate_predictions_from_path(
         folder_path, is_video, source=source, model_domain=model_domain)
@@ -79,7 +84,7 @@ def predict_examples(train_id=None):
         if is_video:
             if not example_folder.is_dir():
                 continue
-            for video_folder in example_folder.glob('*'):
+            for video_folder in example_folder.glob('[!.]*'):   # ignore hidden files
                 predictions_from_folder(
                     video_folder, is_video, train_id=train_id, source=source)
 
