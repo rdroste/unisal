@@ -445,7 +445,7 @@ class Trainer(utils.KwConfigClass):
 
         # Make sure that the model was trained on the selected domain
         if model_kwargs['source'] not in self.model.sources:
-            print(f"\nWaring! Evaluation bn source {model_kwargs['source']} "
+            print(f"\nWarning! Evaluation bn source {model_kwargs['source']} "
                   f"doesn't exist in model.\n  Using {self.model.sources[0]}.")
             model_kwargs['source'] = self.model.sources[0]
 
@@ -888,7 +888,7 @@ class Trainer(utils.KwConfigClass):
                 # Iterate over the prediction frames
                 for frame_idx, smap in enumerate(torch.unbind(pred_seq, dim=1)):
 
-                    # Posporcess prediction
+                    # Postprocess prediction
                     smap = smap.exp()
                     smap = torch.squeeze(smap)
                     smap = utils.to_numpy(smap)
@@ -1105,7 +1105,7 @@ class Trainer(utils.KwConfigClass):
                 times.append(dt)
             print()
             dt = sum(times) / len(times)
-            print("Avg single-frame CPU time: " 
+            print("Avg single-frame CPU time: "
                   f"{dt:.4f} s ({1 / dt:.1f} fps)")
             dt = min(times)
             print(f"Min single-frame CPU time: {dt:.4f} s ({1 / dt:.1f} fps)")
