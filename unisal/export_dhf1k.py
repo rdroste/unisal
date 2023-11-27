@@ -2,19 +2,20 @@
 Script used to export DHF1K from original form (after downloading + unar files) to a directory
 compatible with this repository
 """
-import argparse
 from pathlib import Path
 from shutil import copytree
 
 import cv2
 
-DHF1K_PATH = "/Users/alessandro/datasets/DHF1K"
+# path to https://drive.google.com/drive/folders/1sW0tf9RQMO4RR7SyKhU8Kmbm4jwkFGpQ
+# DHF1K_PATH = "/Path/To/Dataset/DHF1K"
+DHF1K_PATH = "/Users/Alessandro/Datasets/DHF1K"
 
 
 def extract_frames(video_path, frames_dir):
     vidcap = cv2.VideoCapture(str(video_path))
     success, image = vidcap.read()
-    count = 0
+    count = 1
     while success:
         frame_filename = f"{count:04d}.png"
         cv2.imwrite(str(frames_dir / frame_filename), image)  # Save frame as PNG file
