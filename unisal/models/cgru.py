@@ -39,11 +39,25 @@ class ConvGRUCell(nn.Module):
         mobile: If True, MobileNet-style convolutions are used.
     """
 
-    def __init__(self, input_ch, hidden_ch, kernel_size, gate_ksize=(1, 1),
-                 bias=True, norm='', norm_momentum=0.1, affine_norm=True,
-                 batchnorm=None, gain=1, drop_prob=(0., 0., 0.),
-                 do_mode='recurrent', r_bias=0., z_bias=0., mobile=False,
-                 **kwargs):
+    def __init__(
+        self,
+        input_ch,
+        hidden_ch,
+        kernel_size,
+        gate_ksize=(1, 1),
+        bias=True,
+        norm="",
+        norm_momentum=0.1,
+        affine_norm=True,
+        batchnorm=None,
+        gain=1,
+        drop_prob=(0.0, 0.0, 0.0),
+        do_mode="recurrent",
+        r_bias=0.0,
+        z_bias=0.0,
+        mobile=False,
+        **kwargs
+    ):
         super().__init__()
 
         self.input_ch = input_ch
@@ -51,7 +65,7 @@ class ConvGRUCell(nn.Module):
         self.kernel_size = kernel_size
         self.gate_ksize = gate_ksize
         self.mobile = mobile
-        self.kwargs = {'init': 'xavier_uniform_'}
+        self.kwargs = {"init": "xavier_uniform_"}
         self.kwargs.update(kwargs)
 
         # Process normalization arguments
@@ -61,11 +75,13 @@ class ConvGRUCell(nn.Module):
         self.batchnorm = batchnorm
         self.norm_kwargs = None
         if self.batchnorm is not None:
-            self.norm = 'batch'
+            self.norm = "batch"
         elif self.norm:
             self.norm_kwargs = {
-                'affine': self.affine_norm, 'track_running_stats': True,
-                'momentum': self.norm_momentum}
+                "affine": self.affine_norm,
+                "track_running_stats": True,
+                "momentum": self.norm_momentum,
+            }
 
         # Prepare normalization modules
         if self.norm:
@@ -79,12 +95,12 @@ class ConvGRUCell(nn.Module):
         # Prepare dropout
         self.drop_prob = drop_prob
         self.do_mode = do_mode
-        if self.do_mode == 'recurrent':
+        if self.do_mode == "recurrent":
             # Prepare dropout masks if using recurrent dropout
             for idx, mask in self.yield_drop_masks():
                 self.register_buffer(self.mask_name(idx), mask)
-        elif self.do_mode != 'naive':
-            raise ValueError('Unknown dropout mode ', self.do_mode)
+        elif self.do_mode != "naive":
+            raise ValueError("Unknown dropout mode ", self.do_mode)
 
         # Instantiate the main weight matrices
         self.w_r = self._conv2d(self.input_ch, self.gate_ksize, bias=False)
@@ -115,9 +131,11 @@ class ConvGRUCell(nn.Module):
 
     def set_weights(self):
         """Initialize the parameters"""
+
         def gain_from_ksize(ksize):
             n = ksize[0] * ksize[1] * self.hidden_ch
-            return math.sqrt(2. / n)
+            return math.sqrt(2.0 / n)
+
         with torch.no_grad():
             if not self.mobile:
                 if self.gain < 0:
@@ -125,7 +143,7 @@ class ConvGRUCell(nn.Module):
                     gain_2 = gain_from_ksize(self.gate_ksize)
                 else:
                     gain_1 = gain_2 = self.gain
-                init_fn = getattr(init, self.kwargs['init'])
+                init_fn = getattr(init, self.kwargs["init"])
                 init_fn(self.w_r.weight, gain=gain_2)
                 init_fn(self.u_r.weight, gain=gain_2)
                 init_fn(self.w_z.weight, gain=gain_2)
@@ -197,7 +215,7 @@ class ConvGRUCell(nn.Module):
 
     @staticmethod
     def mask_name(idx):
-        return 'drop_mask_{}'.format(idx)
+        return "drop_mask_{}".format(idx)
 
     def set_drop_masks(self):
         """Set the dropout masks for the current sequence"""
@@ -210,27 +228,29 @@ class ConvGRUCell(nn.Module):
         n_channels = (self.input_ch, self.hidden_ch, self.hidden_ch)
         for idx, p in enumerate(self.drop_prob):
             if p > 0:
-                yield (idx, self.generate_do_mask(
-                    p, n_masks[idx], n_channels[idx]))
+                yield (idx, self.generate_do_mask(p, n_masks[idx], n_channels[idx]))
 
     @staticmethod
     def generate_do_mask(p, n, ch):
         """Generate a dropout mask for recurrent dropout"""
         with torch.no_grad():
             mask = Bernoulli(torch.full((n, ch), 1 - p)).sample() / (1 - p)
-            mask = mask.requires_grad_(False).cuda()
+            mask = (
+                mask.requires_grad_(False).cuda()
+                if torch.cuda.is_available()
+                else mask.requires_grad_(False).cpu()
+            )
             return mask
 
     def apply_dropout(self, x, idx, sub_idx):
         """Apply recurrent or naive dropout"""
         if self.training and self.drop_prob[idx] > 0 and idx != 2:
-            if self.do_mode == 'recurrent':
+            if self.do_mode == "recurrent":
                 x = x.clone() * torch.reshape(
-                    getattr(self, self.mask_name(idx))
-                    [sub_idx, :], (1, -1, 1, 1))
-            elif self.do_mode == 'naive':
-                x = f.dropout2d(
-                    x, self.drop_prob[idx], self.training, inplace=False)
+                    getattr(self, self.mask_name(idx))[sub_idx, :], (1, -1, 1, 1)
+                )
+            elif self.do_mode == "naive":
+                x = f.dropout2d(x, self.drop_prob[idx], self.training, inplace=False)
         else:
             x = x.clone()
         return x
@@ -240,9 +260,9 @@ class ConvGRUCell(nn.Module):
         norm_module = None
         if self.batchnorm is not None:
             norm_module = self.batchnorm(channels)
-        elif self.norm == 'instance':
+        elif self.norm == "instance":
             norm_module = nn.InstanceNorm2d(channels, **self.norm_kwargs)
-        elif self.norm == 'batch':
+        elif self.norm == "batch":
             norm_module = nn.BatchNorm2d(channels, **self.norm_kwargs)
         return norm_module
 
@@ -253,24 +273,38 @@ class ConvGRUCell(nn.Module):
         """
         padding = tuple(k_size // 2 for k_size in kernel_size)
         if not self.mobile or kernel_size == (1, 1):
-            return nn.Conv2d(in_channels, self.hidden_ch, kernel_size,
-                             padding=padding, bias=bias)
+            return nn.Conv2d(
+                in_channels, self.hidden_ch, kernel_size, padding=padding, bias=bias
+            )
         else:
-            return nn.Sequential(OrderedDict([
-                ('conv_dw', nn.Conv2d(
-                    in_channels, in_channels, kernel_size=kernel_size,
-                    padding=padding, groups=in_channels, bias=False)),
-                ('sep_bn', self.get_norm_module(in_channels)),
-                ('sep_relu', nn.ReLU6()),
-                ('conv_sep', nn.Conv2d(
-                    in_channels, self.hidden_ch, 1, bias=bias)),
-            ]))
+            return nn.Sequential(
+                OrderedDict(
+                    [
+                        (
+                            "conv_dw",
+                            nn.Conv2d(
+                                in_channels,
+                                in_channels,
+                                kernel_size=kernel_size,
+                                padding=padding,
+                                groups=in_channels,
+                                bias=False,
+                            ),
+                        ),
+                        ("sep_bn", self.get_norm_module(in_channels)),
+                        ("sep_relu", nn.ReLU6()),
+                        (
+                            "conv_sep",
+                            nn.Conv2d(in_channels, self.hidden_ch, 1, bias=bias),
+                        ),
+                    ]
+                )
+            )
 
     def _init_hidden(self, input_, cuda=True):
         """Initialize the hidden state"""
         batch_size, _, height, width = input_.data.size()
-        prev_state = torch.zeros(
-            batch_size, self.hidden_ch, height, width)
+        prev_state = torch.zeros(batch_size, self.hidden_ch, height, width)
         if cuda:
             prev_state = prev_state.cuda()
         return prev_state
@@ -278,10 +312,16 @@ class ConvGRUCell(nn.Module):
 
 class ConvGRU(nn.Module):
 
-    def __init__(self, input_channels=None, hidden_channels=None,
-                 kernel_size=(3, 3), gate_ksize=(1, 1),
-                 dropout=(False, False, False), drop_prob=(0.5, 0.5, 0.5),
-                 **kwargs):
+    def __init__(
+        self,
+        input_channels=None,
+        hidden_channels=None,
+        kernel_size=(3, 3),
+        gate_ksize=(1, 1),
+        dropout=(False, False, False),
+        drop_prob=(0.5, 0.5, 0.5),
+        **kwargs
+    ):
         """
         Generates a multi-layer convolutional GRU.
         Preserves spatial dimensions across cells, only altering depth.
@@ -313,8 +353,10 @@ class ConvGRU(nn.Module):
         self.gate_ksize = self._extend_for_multilayer(gate_ksize)
         self.dropout = self._extend_for_multilayer(dropout)
         drop_prob = self._extend_for_multilayer(drop_prob)
-        self.drop_prob = [tuple(dp_ if do_ else 0. for dp_, do_ in zip(dp, do))
-                          for dp, do in zip(drop_prob, self.dropout)]
+        self.drop_prob = [
+            tuple(dp_ if do_ else 0.0 for dp_, do_ in zip(dp, do))
+            for dp, do in zip(drop_prob, self.dropout)
+        ]
         self.kwargs = kwargs
 
         cell_list = []
@@ -322,13 +364,19 @@ class ConvGRU(nn.Module):
             if idx < self.num_layers - 1:
                 # Switch output dropout off for hidden layers.
                 # Otherwise it would confict with input dropout.
-                this_drop_prob = self.drop_prob[idx][:2] + (0.,)
+                this_drop_prob = self.drop_prob[idx][:2] + (0.0,)
             else:
                 this_drop_prob = self.drop_prob[idx]
-            cell_list.append(ConvGRUCell(
-                self.input_channels[idx], self.hidden_channels[idx],
-                self.kernel_size[idx], drop_prob=this_drop_prob,
-                gate_ksize=self.gate_ksize[idx], **kwargs))
+            cell_list.append(
+                ConvGRUCell(
+                    self.input_channels[idx],
+                    self.hidden_channels[idx],
+                    self.kernel_size[idx],
+                    drop_prob=this_drop_prob,
+                    gate_ksize=self.gate_ksize[idx],
+                    **kwargs
+                )
+            )
         self.cell_list = nn.ModuleList(cell_list)
 
     def forward(self, input_tensor, hidden=None):
@@ -350,8 +398,7 @@ class ConvGRU(nn.Module):
 
         for t, x in enumerate(iterator):
             for layer_idx in range(self.num_layers):
-                if self.cell_list[layer_idx].do_mode == 'recurrent'\
-                        and t == 0:
+                if self.cell_list[layer_idx].do_mode == "recurrent" and t == 0:
                     self.cell_list[layer_idx].set_drop_masks()
                 (x, h) = self.cell_list[layer_idx](x, hidden[layer_idx])
                 hidden[layer_idx] = h.clone()
@@ -362,14 +409,18 @@ class ConvGRU(nn.Module):
 
     @staticmethod
     def _check_kernel_size_consistency(kernel_size):
-        if not (isinstance(kernel_size, tuple) or
-                (isinstance(kernel_size, list) and
-                 all([isinstance(elem, tuple) for elem in kernel_size]))):
-            raise ValueError('`kernel_size` must be tuple or list of tuples')
+        if not (
+            isinstance(kernel_size, tuple)
+            or (
+                isinstance(kernel_size, list)
+                and all([isinstance(elem, tuple) for elem in kernel_size])
+            )
+        ):
+            raise ValueError("`kernel_size` must be tuple or list of tuples")
 
     def _extend_for_multilayer(self, param):
         if not isinstance(param, list):
             param = [param] * self.num_layers
         else:
-            assert(len(param) == self.num_layers)
+            assert len(param) == self.num_layers
         return param
