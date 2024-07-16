@@ -11,6 +11,11 @@ from . import utils
 from .models.cgru import ConvGRU
 from .models.MobileNetV2 import MobileNetV2, InvertedResidual
 
+DEFAULT_DEVICE = (
+    torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
+)
+print(f"torch device set to: {DEFAULT_DEVICE}")
+
 
 def get_model():
     """Return the model class"""
@@ -24,41 +29,50 @@ class BaseModel(nn.Module):
         raise NotImplementedError
 
     def save_weights(self, directory, name):
-        torch.save(self.state_dict(), directory / f'weights_{name}.pth')
+        torch.save(self.state_dict(), directory / f"weights_{name}.pth")
 
     def load_weights(self, directory, name):
-        self.load_state_dict(torch.load(directory / f'weights_{name}.pth'))
+        self.load_state_dict(
+            torch.load(directory / f"weights_{name}.pth", map_location=DEFAULT_DEVICE)
+        )
 
     def load_best_weights(self, directory):
-        self.load_state_dict(torch.load(directory / f'weights_best.pth'))
+        self.load_state_dict(
+            torch.load(directory / f"weights_best.pth", map_location=DEFAULT_DEVICE)
+        )
 
     def load_epoch_checkpoint(self, directory, epoch):
         """Load state_dict from a Trainer checkpoint at a specific epoch"""
         chkpnt = torch.load(directory / f"chkpnt_epoch{epoch:04d}.pth")
-        self.load_state_dict(chkpnt['model_state_dict'])
+        self.load_state_dict(chkpnt["model_state_dict"])
 
     def load_checkpoint(self, file):
         """Load state_dict from a specific Trainer checkpoint"""
         """Load """
         chkpnt = torch.load(file)
-        self.load_state_dict(chkpnt['model_state_dict'])
+        self.load_state_dict(chkpnt["model_state_dict"])
 
     def load_last_chkpnt(self, directory):
         """Load state_dict from the last Trainer checkpoint"""
-        last_chkpnt = sorted(list(directory.glob('chkpnt_epoch*.pth')))[-1]
+        last_chkpnt = sorted(list(directory.glob("chkpnt_epoch*.pth")))[-1]
         self.load_checkpoint(last_chkpnt)
 
 
 # Set default backbone CNN kwargs
 default_cnn_cfg = {
-    'widen_factor': 1., 'pretrained': True, 'input_channel': 32,
-    'last_channel': 1280}
+    "widen_factor": 1.0,
+    "pretrained": True,
+    "input_channel": 32,
+    "last_channel": 1280,
+}
 
 # Set default RNN kwargs
 default_rnn_cfg = {
-    'kernel_size': (3, 3), 'gate_ksize': (3, 3),
-    'dropout': (False, True, False), 'drop_prob': (0.2, 0.2, 0.2),
-    'mobile': True,
+    "kernel_size": (3, 3),
+    "gate_ksize": (3, 3),
+    "dropout": (False, True, False),
+    "drop_prob": (0.2, 0.2, 0.2),
+    "mobile": True,
 }
 
 
@@ -72,11 +86,11 @@ class DomainBatchNorm2d(nn.Module):
 
     def __init__(self, num_features, sources, momenta=None, **kwargs):
         """
-            num_features: Number of channels
-            sources: List of sources
-            momenta: List of BatchNorm momenta corresponding to the sources.
-                Default is 0.1 for each source.
-            kwargs: Other BatchNorm kwargs
+        num_features: Number of channels
+        sources: List of sources
+        momenta: List of BatchNorm momenta corresponding to the sources.
+            Default is 0.1 for each source.
+        kwargs: Other BatchNorm kwargs
         """
         super().__init__()
         self.sources = sources
@@ -85,13 +99,14 @@ class DomainBatchNorm2d(nn.Module):
         if momenta is None:
             momenta = [0.1] * len(sources)
         self.momenta = momenta
-        if 'momentum' in kwargs:
-            del kwargs['momentum']
+        if "momentum" in kwargs:
+            del kwargs["momentum"]
 
         # Instantiate the BN modules
         for src, mnt in zip(sources, self.momenta):
-            self.__setattr__(f"bn_{src}", nn.BatchNorm2d(
-                num_features, momentum=mnt, **kwargs))
+            self.__setattr__(
+                f"bn_{src}", nn.BatchNorm2d(num_features, momentum=mnt, **kwargs)
+            )
 
         # Prepare the self.this_source attribute that will be updated at runtime
         # by the model
@@ -131,35 +146,37 @@ class UNISAL(BaseModel, utils.KwConfigClass):
         verbose: Verbosity level.
     """
 
-    def __init__(self,
-                 rnn_input_channels=256, rnn_hidden_channels=256,
-                 cnn_cfg=None,
-                 rnn_cfg=None,
-                 res_rnn=True,
-                 bypass_rnn=True,
-                 drop_probs=(0.0, 0.6, 0.6),
-                 gaussian_init='manual',
-                 n_gaussians=16,
-                 smoothing_ksize=41,
-                 bn_momentum=0.01,
-                 static_bn_momentum=0.1,
-                 sources=('DHF1K', 'Hollywood', 'UCFSports', 'SALICON'),
-                 ds_bn=True,
-                 ds_adaptation=True,
-                 ds_smoothing=True,
-                 ds_gaussians=True,
-                 verbose=1,
-                 ):
+    def __init__(
+        self,
+        rnn_input_channels=256,
+        rnn_hidden_channels=256,
+        cnn_cfg=None,
+        rnn_cfg=None,
+        res_rnn=True,
+        bypass_rnn=True,
+        drop_probs=(0.0, 0.6, 0.6),
+        gaussian_init="manual",
+        n_gaussians=16,
+        smoothing_ksize=41,
+        bn_momentum=0.01,
+        static_bn_momentum=0.1,
+        sources=("DHF1K", "Hollywood", "UCFSports", "SALICON"),
+        ds_bn=True,
+        ds_adaptation=True,
+        ds_smoothing=True,
+        ds_gaussians=True,
+        verbose=1,
+    ):
         super().__init__()
 
         # Check inputs
-        assert(gaussian_init in ('random', 'manual'))
+        assert gaussian_init in ("random", "manual")
         # Bypass-RNN requires residual RNN connection
         if bypass_rnn:
             assert res_rnn
 
         # Manual Gaussian initialization generates 16 Gaussians
-        if n_gaussians > 0 and gaussian_init == 'manual':
+        if n_gaussians > 0 and gaussian_init == "manual":
             n_gaussians = 16
 
         self.rnn_input_channels = rnn_input_channels
@@ -190,64 +207,98 @@ class UNISAL(BaseModel, utils.KwConfigClass):
 
         # Initialize Post-CNN module with optional dropout
         post_cnn = [
-            ('inv_res', InvertedResidual(
-                self.cnn.out_channels + n_gaussians,
-                rnn_input_channels, 1, 1, bn_momentum=bn_momentum,
-            ))
+            (
+                "inv_res",
+                InvertedResidual(
+                    self.cnn.out_channels + n_gaussians,
+                    rnn_input_channels,
+                    1,
+                    1,
+                    bn_momentum=bn_momentum,
+                ),
+            )
         ]
         if self.drop_probs[0] > 0:
-            post_cnn.insert(0, (
-                'dropout', nn.Dropout2d(self.drop_probs[0], inplace=False)
-            ))
+            post_cnn.insert(
+                0, ("dropout", nn.Dropout2d(self.drop_probs[0], inplace=False))
+            )
         self.post_cnn = nn.Sequential(OrderedDict(post_cnn))
 
         # Initialize Bypass-RNN if training on dynamic data
-        if sources != ('SALICON',) or not self.bypass_rnn:
+        if sources != ("SALICON",) or not self.bypass_rnn:
             self.rnn = ConvGRU(
                 rnn_input_channels,
                 hidden_channels=[rnn_hidden_channels],
                 batchnorm=self.get_bn_module,
-                **self.rnn_cfg)
-            self.post_rnn = self.conv_1x1_bn(
-                rnn_hidden_channels, rnn_input_channels)
+                **self.rnn_cfg,
+            )
+            self.post_rnn = self.conv_1x1_bn(rnn_hidden_channels, rnn_input_channels)
 
         # Initialize first upsampling module US1
-        self.upsampling_1 = nn.Sequential(OrderedDict([
-            ('us1', self.upsampling(2)),
-        ]))
+        self.upsampling_1 = nn.Sequential(
+            OrderedDict(
+                [
+                    ("us1", self.upsampling(2)),
+                ]
+            )
+        )
 
         # Number of channels at the 2x scale
         channels_2x = 128
 
         # Initialize Skip-2x module
         self.skip_2x = self.make_skip_connection(
-            self.cnn.feat_2x_channels, channels_2x, 2, self.drop_probs[1])
+            self.cnn.feat_2x_channels, channels_2x, 2, self.drop_probs[1]
+        )
 
         # Initialize second upsampling module US2
-        self.upsampling_2 = nn.Sequential(OrderedDict([
-            ('inv_res', InvertedResidual(
-                rnn_input_channels + channels_2x,
-                channels_2x, 1, 2, batchnorm=self.get_bn_module)),
-            ('us2', self.upsampling(2)),
-        ]))
+        self.upsampling_2 = nn.Sequential(
+            OrderedDict(
+                [
+                    (
+                        "inv_res",
+                        InvertedResidual(
+                            rnn_input_channels + channels_2x,
+                            channels_2x,
+                            1,
+                            2,
+                            batchnorm=self.get_bn_module,
+                        ),
+                    ),
+                    ("us2", self.upsampling(2)),
+                ]
+            )
+        )
 
         # Number of channels at the 4x scale
         channels_4x = 64
 
         # Initialize Skip-4x module
         self.skip_4x = self.make_skip_connection(
-            self.cnn.feat_4x_channels, channels_4x, 2, self.drop_probs[2])
+            self.cnn.feat_4x_channels, channels_4x, 2, self.drop_probs[2]
+        )
 
         # Initialize Post-US2 module
-        self.post_upsampling_2= nn.Sequential(OrderedDict([
-            ('inv_res', InvertedResidual(
-                channels_2x + channels_4x, channels_4x, 1, 2,
-                batchnorm=self.get_bn_module)),
-        ]))
+        self.post_upsampling_2 = nn.Sequential(
+            OrderedDict(
+                [
+                    (
+                        "inv_res",
+                        InvertedResidual(
+                            channels_2x + channels_4x,
+                            channels_4x,
+                            1,
+                            2,
+                            batchnorm=self.get_bn_module,
+                        ),
+                    ),
+                ]
+            )
+        )
 
         # Initialize domain-specific modules
         for source_str in self.sources:
-            source_str = f'_{source_str}'.lower()
+            source_str = f"_{source_str}".lower()
 
             # Initialize learned Gaussian priors parameters
             if n_gaussians > 0:
@@ -255,24 +306,23 @@ class UNISAL(BaseModel, utils.KwConfigClass):
 
             # Initialize Adaptation
             self.__setattr__(
-                'adaptation' + (source_str if self.ds_adaptation else ''),
-                nn.Sequential(*[
-                    nn.Conv2d(channels_4x, 1, 1, bias=True)
-                ]))
+                "adaptation" + (source_str if self.ds_adaptation else ""),
+                nn.Sequential(*[nn.Conv2d(channels_4x, 1, 1, bias=True)]),
+            )
 
             # Initialize Smoothing
             smoothing = nn.Conv2d(
-                1, 1, kernel_size=smoothing_ksize, padding=0, bias=False)
+                1, 1, kernel_size=smoothing_ksize, padding=0, bias=False
+            )
             with torch.no_grad():
                 gaussian = self._make_gaussian_maps(
-                    smoothing.weight.data,
-                    torch.Tensor([[[0.5, -2]] * 2])
+                    smoothing.weight.data, torch.Tensor([[[0.5, -2]] * 2])
                 )
                 gaussian /= gaussian.sum()
                 smoothing.weight.data = gaussian
             self.__setattr__(
-                'smoothing' + (source_str if self.ds_smoothing else ''),
-                smoothing)
+                "smoothing" + (source_str if self.ds_smoothing else ""), smoothing
+            )
 
         if self.verbose > 1:
             pprint.pprint(self.asdict(), width=1)
@@ -292,52 +342,58 @@ class UNISAL(BaseModel, utils.KwConfigClass):
 
     def get_bn_module(self, num_features, **kwargs):
         """Return BatchNorm class (domain-specific or domain-invariant)."""
-        momenta = [self.bn_momentum if src != 'SALICON'
-                   else self.static_bn_momentum for src in self.sources]
+        momenta = [
+            self.bn_momentum if src != "SALICON" else self.static_bn_momentum
+            for src in self.sources
+        ]
         if self.ds_bn:
             return DomainBatchNorm2d(
-                num_features, self.sources, momenta=momenta, **kwargs)
+                num_features, self.sources, momenta=momenta, **kwargs
+            )
         else:
             return nn.BatchNorm2d(num_features, **kwargs)
 
     # @staticmethod
     def upsampling(self, factor):
         """Return upsampling module."""
-        return nn.Sequential(*[
-            nn.Upsample(
-                scale_factor=factor, mode='bilinear', align_corners=False),
-        ])
+        return nn.Sequential(
+            *[
+                nn.Upsample(scale_factor=factor, mode="bilinear", align_corners=False),
+            ]
+        )
 
-    def set_gaussians(self, source_str, prefix='coarse_'):
+    def set_gaussians(self, source_str, prefix="coarse_"):
         """Set Gaussian parameters."""
-        suffix = source_str if self.ds_gaussians else ''
+        suffix = source_str if self.ds_gaussians else ""
         self.__setattr__(
-            prefix + 'gaussians' + suffix,
-            self._initialize_gaussians(self.n_gaussians))
+            prefix + "gaussians" + suffix, self._initialize_gaussians(self.n_gaussians)
+        )
 
     def _initialize_gaussians(self, n_gaussians):
         """
         Return initialized Gaussian parameters.
         Dimensions: [idx, y/x, mu/logstd].
         """
-        if self.gaussian_init == 'manual':
-            gaussians = torch.Tensor([
-                    list(product([0.25, 0.5, 0.75], repeat=2)) +
-                    [(0.5, 0.25), (0.5, 0.5), (0.5, 0.75)] +
-                    [(0.25, 0.5), (0.5, 0.5), (0.75, 0.5)] +
-                    [(0.5, 0.5)],
-                    [(-1.5, -1.5)] * 9 + [(0, -1.5)] * 3 + [(-1.5, 0)] * 3 +
-                    [(0, 0)],
-            ]).permute(1, 2, 0)
+        if self.gaussian_init == "manual":
+            gaussians = torch.Tensor(
+                [
+                    list(product([0.25, 0.5, 0.75], repeat=2))
+                    + [(0.5, 0.25), (0.5, 0.5), (0.5, 0.75)]
+                    + [(0.25, 0.5), (0.5, 0.5), (0.75, 0.5)]
+                    + [(0.5, 0.5)],
+                    [(-1.5, -1.5)] * 9 + [(0, -1.5)] * 3 + [(-1.5, 0)] * 3 + [(0, 0)],
+                ]
+            ).permute(1, 2, 0)
 
-        elif self.gaussian_init == 'random':
+        elif self.gaussian_init == "random":
             with torch.no_grad():
-                gaussians = torch.stack([
-                        torch.randn(
-                            n_gaussians, 2, dtype=torch.float) * .1 + 0.5,
-                        torch.randn(
-                            n_gaussians, 2, dtype=torch.float) * .2 - 1,],
-                    dim=2)
+                gaussians = torch.stack(
+                    [
+                        torch.randn(n_gaussians, 2, dtype=torch.float) * 0.1 + 0.5,
+                        torch.randn(n_gaussians, 2, dtype=torch.float) * 0.2 - 1,
+                    ],
+                    dim=2,
+                )
 
         else:
             raise NotImplementedError
@@ -346,7 +402,7 @@ class UNISAL(BaseModel, utils.KwConfigClass):
         return gaussians
 
     @staticmethod
-    def _make_gaussian_maps(x, gaussians, size=None, scaling=6.):
+    def _make_gaussian_maps(x, gaussians, size=None, scaling=6.0):
         """Construct prior maps from Gaussian parameters."""
         if size is None:
             size = x.shape[-2:]
@@ -360,15 +416,18 @@ class UNISAL(BaseModel, utils.KwConfigClass):
         gaussian_maps = []
         map_template = torch.ones(*size, dtype=dtype, device=device)
         meshgrids = torch.meshgrid(
-            [torch.linspace(0, 1, size[0], dtype=dtype, device=device),
-             torch.linspace(0, 1, size[1], dtype=dtype, device=device),])
+            [
+                torch.linspace(0, 1, size[0], dtype=dtype, device=device),
+                torch.linspace(0, 1, size[1], dtype=dtype, device=device),
+            ]
+        )
 
         for gaussian_idx, yx_mu_logstd in enumerate(torch.unbind(gaussians)):
             map = map_template.clone()
             for mu_logstd, mgrid in zip(yx_mu_logstd, meshgrids):
                 mu = mu_logstd[0]
                 std = torch.exp(mu_logstd[1])
-                map *= torch.exp(-((mgrid - mu) / std) ** 2 / 2)
+                map *= torch.exp(-(((mgrid - mu) / std) ** 2) / 2)
 
             map *= scaling
             gaussian_maps.append(map)
@@ -377,27 +436,36 @@ class UNISAL(BaseModel, utils.KwConfigClass):
         gaussian_maps = gaussian_maps.unsqueeze(0).expand(bs, -1, -1, -1)
         return gaussian_maps
 
-    def _get_gaussian_maps(self, x, source_str, prefix='coarse_', **kwargs):
+    def _get_gaussian_maps(self, x, source_str, prefix="coarse_", **kwargs):
         """Return the constructed Gaussian prior maps."""
-        suffix = source_str if self.ds_gaussians else ''
+        suffix = source_str if self.ds_gaussians else ""
         gaussians = self.__getattr__(prefix + "gaussians" + suffix)
         gaussian_maps = self._make_gaussian_maps(x, gaussians, **kwargs)
         return gaussian_maps
 
     # @classmethod
-    def make_skip_connection(self, input_channels, output_channels, expand_ratio, p,
-                       inplace=False):
+    def make_skip_connection(
+        self, input_channels, output_channels, expand_ratio, p, inplace=False
+    ):
         """Return skip connection module."""
         hidden_channels = round(input_channels * expand_ratio)
-        return nn.Sequential(OrderedDict([
-            ('expansion', self.conv_1x1_bn(
-                input_channels, hidden_channels)),
-            ('dropout', nn.Dropout2d(p, inplace=inplace)),
-            ('reduction', nn.Sequential(*[
-                nn.Conv2d(hidden_channels, output_channels, 1),
-                self.get_bn_module(output_channels),
-            ])),
-        ]))
+        return nn.Sequential(
+            OrderedDict(
+                [
+                    ("expansion", self.conv_1x1_bn(input_channels, hidden_channels)),
+                    ("dropout", nn.Dropout2d(p, inplace=inplace)),
+                    (
+                        "reduction",
+                        nn.Sequential(
+                            *[
+                                nn.Conv2d(hidden_channels, output_channels, 1),
+                                self.get_bn_module(output_channels),
+                            ]
+                        ),
+                    ),
+                ]
+            )
+        )
 
     # @staticmethod
     def conv_1x1_bn(self, inp, oup):
@@ -405,11 +473,18 @@ class UNISAL(BaseModel, utils.KwConfigClass):
         return nn.Sequential(
             nn.Conv2d(inp, oup, 1, 1, 0, bias=False),
             self.get_bn_module(oup),
-            nn.ReLU6(inplace=True)
+            nn.ReLU6(inplace=True),
         )
 
-    def forward(self, x, target_size=None, h0=None, return_hidden=False,
-                source='DHF1K', static=None):
+    def forward(
+        self,
+        x,
+        target_size=None,
+        h0=None,
+        return_hidden=False,
+        source="DHF1K",
+        static=None,
+    ):
         """
         Forward pass.
 
@@ -429,9 +504,9 @@ class UNISAL(BaseModel, utils.KwConfigClass):
         self.this_source = source
 
         # Prepare other parameters
-        source_str = f'_{source.lower()}'
+        source_str = f"_{source.lower()}"
         if static is None:
-            static = x.shape[1] == 1 or self.sources == ('SALICON',)
+            static = x.shape[1] == 1 or self.sources == ("SALICON",)
 
         # Compute backbone CNN features and concatenate with Gaussian prior maps
         feat_seq_1x = []
@@ -461,8 +536,7 @@ class UNISAL(BaseModel, utils.KwConfigClass):
 
         # Decoder
         output_seq = []
-        for idx, im_feat in enumerate(
-                torch.unbind(feat_seq_1x, dim=1)):
+        for idx, im_feat in enumerate(torch.unbind(feat_seq_1x, dim=1)):
 
             if not (static and self.bypass_rnn):
                 rnn_feat = rnn_feat_seq[:, idx, ...]
@@ -479,20 +553,19 @@ class UNISAL(BaseModel, utils.KwConfigClass):
             im_feat = self.post_upsampling_2(im_feat)
 
             im_feat = self.__getattr__(
-                'adaptation' + (source_str if self.ds_adaptation else ''))(
-                im_feat)
+                "adaptation" + (source_str if self.ds_adaptation else "")
+            )(im_feat)
 
-            im_feat = F.interpolate(
-                im_feat, size=x.shape[-2:], mode='nearest')
+            im_feat = F.interpolate(im_feat, size=x.shape[-2:], mode="nearest")
 
-            im_feat = F.pad(im_feat, [self.smoothing_ksize // 2] * 4,
-                            mode='replicate')
+            im_feat = F.pad(im_feat, [self.smoothing_ksize // 2] * 4, mode="replicate")
             im_feat = self.__getattr__(
-                'smoothing' + (source_str if self.ds_smoothing else ''))(
-                im_feat)
+                "smoothing" + (source_str if self.ds_smoothing else "")
+            )(im_feat)
 
             im_feat = F.interpolate(
-                im_feat, size=target_size, mode='bilinear', align_corners=False)
+                im_feat, size=target_size, mode="bilinear", align_corners=False
+            )
 
             im_feat = utils.log_softmax(im_feat)
             output_seq.append(im_feat)
