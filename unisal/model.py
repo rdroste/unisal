@@ -1,5 +1,5 @@
 from collections import OrderedDict
-import pprint
+import pprint, os
 from functools import partial
 from itertools import product
 
@@ -40,6 +40,15 @@ class BaseModel(nn.Module):
         self.load_state_dict(
             torch.load(directory / f"weights_best.pth", map_location=DEFAULT_DEVICE)
         )
+
+    def load_weights_from_path(self, weights_path):
+        assert os.path.isfile(
+            weights_path
+        ), f"weights_path {weights_path} is not a valid file"
+        assert weights_path.endswith(
+            ".pth"
+        ), f"weights file must have .pth extension, {os.path.splitext(weights_path)[-1]}"
+        self.load_state_dict(torch.load(weights_path, map_location=DEFAULT_DEVICE))
 
     def load_epoch_checkpoint(self, directory, epoch):
         """Load state_dict from a Trainer checkpoint at a specific epoch"""

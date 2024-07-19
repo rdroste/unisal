@@ -16,7 +16,6 @@ import math
 import torch
 import torch.nn.functional as F
 import cv2
-from tensorboardX import SummaryWriter
 import numpy as np
 
 from . import salience_metrics
@@ -686,6 +685,141 @@ class Trainer(utils.KwConfigClass):
         if return_predictions:
             return pred_seq
 
+    def inference(
+        self,
+        img_rgb: np.array,
+        source: str = "SALICON",  # images: ['SALICON', 'MIT1003', 'MIT300'], videos: ['DHF1K',"UCFSports", "Hollywood"]
+        # vid_nr, # image index, 0 for video
+        # dataset=None,
+        # phase=None,
+        smooth_method=None,
+        # metrics=None,
+        # save_predictions=False,
+        # return_predictions=False,
+        seq_len_factor=0.5,
+        random_seed=27,
+        # n_aucs_maps=10,
+        # auc_portion=1.0,
+        # model_domain=None,
+        # folder_suffix=None,
+    ):
+        """run inference on numpy array and return a mask"""
+
+        # if dataset is None:
+        #     assert phase, "Must provide either dataset or phase"
+        #     dataset = self.get_dataset(phase, source)
+
+        if random_seed is not None:
+            random.seed(random_seed)
+
+        # Get the original resolution (h,w)
+        # target_size = dataset.target_size_dict[vid_nr]
+        target_size = img_rgb.shape[:2]
+
+        # Set the keyword arguments for the forward pass
+        model_kwargs = {"source": source, "target_size": target_size}
+
+        # Make sure that the model was trained on the selected domain
+        if model_kwargs["source"] not in self.model.sources:
+            print(
+                f"\nWarning! Evaluation bn source {model_kwargs['source']} "
+                f"doesn't exist in model.\n  Using {self.model.sources[0]}."
+            )
+            model_kwargs["source"] = self.model.sources[0]
+
+        # Select static (image) or dynamic (video) forward pass for Bypass-RNN
+        model_kwargs.update(
+            {"static": model_kwargs["source"] in ("SALICON", "MIT300", "MIT1003")}
+        )
+
+        # Set additional parameters
+        static_data = source in ("SALICON", "MIT300", "MIT1003")
+        assert static_data, f"trainer.inference currently only support static_data"
+        if static_data:
+            smooth_method = None
+            # auc_portion = 1.0
+            n_images = 1
+            frame_modulo = 1
+        else:
+            # video mode
+            n_images = dataset.n_images_dict[vid_nr]
+            frame_modulo = dataset.frame_modulo
+
+        # Prepare the model
+        self.model.to(self.device)
+        self.model.eval()
+        torch.cuda.empty_cache()
+
+        # Prepare the prediction and target tensors
+        results_size = (1, n_images, 1, *model_kwargs["target_size"])
+        pred_seq = torch.full(results_size, 0, dtype=torch.float)
+        sal_seq, fix_seq = None, None
+
+        # Define input sequence length
+        # seq_len = self.batch_size * self.get_dataset('train').seq_len * \
+        #     seq_len_factor
+        seq_len = int(12 * seq_len_factor)
+
+        # Iterate over different offsets to create the interleaved predictions
+        for offset in range(min(frame_modulo, n_images)):
+
+            # Get the data
+            if not static_data:
+                # video mode
+                sample = dataset.get_data(vid_nr, offset + 1)
+                sample = sample[:-1]
+            else:
+                # sample = dataset.get_data(vid_nr)
+                sample = [1], data.im_preprocess(img_rgb=img_rgb)
+
+            # Preprocess the data
+            if len(sample) >= 4:
+                # if len(sample) == 5:
+                #     sample = sample[:-1]
+                frame_nrs, frame_seq, this_sal_seq, this_fix_seq = sample
+                this_sal_seq = this_sal_seq.unsqueeze(0).float()
+                this_fix_seq = this_fix_seq.unsqueeze(0)
+                if frame_seq.dim() == 3:
+                    frame_seq = frame_seq.unsqueeze(0)
+                    this_sal_seq = this_sal_seq.unsqueeze(0)
+                    this_fix_seq = this_fix_seq.unsqueeze(0)
+            else:
+                frame_nrs, frame_seq = sample
+                this_sal_seq, this_fix_seq = None, None
+                if frame_seq.dim() == 3:
+                    frame_seq = frame_seq.unsqueeze(0)
+            frame_seq = frame_seq.unsqueeze(0).float()
+            frame_idx_array = [f_nr - 1 for f_nr in frame_nrs]
+            frame_seq = frame_seq.to(self.device)
+
+            # Run all sequences of the current offset
+            h0 = [None]
+            for start in range(0, len(frame_idx_array), seq_len):
+
+                # Select the frames
+                end = min(len(frame_idx_array), start + seq_len)
+                this_frame_seq = frame_seq[:, start:end, :, :, :]
+                this_frame_idx_array = frame_idx_array[start:end]
+
+                # Forward pass
+                this_pred_seq, h0 = self.model(
+                    this_frame_seq, h0=h0, return_hidden=True, **model_kwargs
+                )
+
+                # Insert the predictions into the prediction array
+                this_pred_seq = this_pred_seq.cpu()
+                pred_seq[:, this_frame_idx_array, :, :, :] = this_pred_seq
+
+        # Assert non-empty predictions
+        assert torch.min(pred_seq.exp().sum(-1).sum(-1)) > 0
+
+        # Optionally smooth the interleaved sequences
+        if smooth_method is not None:
+            pred_seq = pred_seq.numpy()
+            pred_seq = utils.smooth_sequence(pred_seq, smooth_method)
+            pred_seq = torch.from_numpy(pred_seq).float()
+        return pred_seq
+
     @staticmethod
     def eval_sequences(
         pred_seq, sal_seq, fix_seq, metrics, other_maps=None, auc_portion=1.0
@@ -1353,6 +1487,8 @@ class Trainer(utils.KwConfigClass):
     @property
     def writer(self):
         """Return TensorboardX writer"""
+        from tensorboardX import SummaryWriter
+
         if self.tboard and self._writer is None:
             if self.data_sources == ("MIT1003",):
                 log_dir = self.mit1003_dir
