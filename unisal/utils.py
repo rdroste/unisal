@@ -91,13 +91,12 @@ class Timer:
         self.verbose = verbose
         self.since = time.time()
         if name and self.verbose:
-            print(name + ' ' + info + '...')
+            print(f'{name} {info}...')
 
     def finish(self):
         time_elapsed = time.time() - self.since
         if self.verbose:
-            print('{} completed in {:.0f}m {:.0f}s'.format(
-                self.name, time_elapsed // 60, time_elapsed % 60))
+            print(f'{self.name} completed in {time_elapsed // 60:.0f}m {time_elapsed % 60:.0f}s')
         return time_elapsed
 
 

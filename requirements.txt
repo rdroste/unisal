@@ -1,0 +1,16 @@
+# Target Python 3.10
+
+# Core ML/DL
+torch~=2.1.0
+torchvision~=0.16.0
+opencv-python~=4.8.0
+numpy~=1.26.0
+Pillow~=10.1.0
+scipy~=1.11.0
+
+# CLI and Experiment Tracking
+fire~=0.5.0
+tensorboardX~=2.6
+
+# For Hugging Face model saving (bonus)
+safetensors~=0.4.0

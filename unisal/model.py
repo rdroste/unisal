@@ -419,7 +419,8 @@ class UNISAL(BaseModel, utils.KwConfigClass):
             [
                 torch.linspace(0, 1, size[0], dtype=dtype, device=device),
                 torch.linspace(0, 1, size[1], dtype=dtype, device=device),
-            ]
+            ],
+            indexing='ij'
         )
 
         for gaussian_idx, yx_mu_logstd in enumerate(torch.unbind(gaussians)):

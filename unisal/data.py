@@ -10,6 +10,7 @@ import torch
 from torch.utils.data import Dataset, DataLoader, BatchSampler, RandomSampler, \
     SequentialSampler
 from torchvision import transforms
+from torchvision.transforms import InterpolationMode
 import numpy as np
 import cv2
 import PIL
@@ -138,7 +139,7 @@ class SALICONDataset(Dataset, utils.KwConfigClass):
         ]
         if data == 'img':
             transformations.append(transforms.Resize(
-                self.out_size, interpolation=PIL.Image.LANCZOS))
+                self.out_size, interpolation=InterpolationMode.LANCZOS))
         transformations.append(transforms.ToTensor())
         if data == 'img' and 'rgb_mean' in self.preproc_cfg:
             transformations.append(
@@ -294,7 +295,7 @@ class MIT300Dataset(Dataset, utils.KwConfigClass):
         transformations = [
             transforms.ToPILImage(),
             transforms.Resize(
-                out_size, interpolation=PIL.Image.LANCZOS),
+                out_size, interpolation=InterpolationMode.LANCZOS),
             transforms.ToTensor(),
         ]
         if 'rgb_mean' in self.preproc_cfg:
@@ -494,10 +495,10 @@ class MIT1003Dataset(Dataset, utils.KwConfigClass):
         ]
         if data in ('img', 'sal'):
             transformations.append(transforms.Resize(
-                out_size, interpolation=PIL.Image.LANCZOS))
+                out_size, interpolation=InterpolationMode.LANCZOS))
         else:
             transformations.append(transforms.Resize(
-                out_size, interpolation=PIL.Image.NEAREST))
+                out_size, interpolation=InterpolationMode.NEAREST))
         transformations.append(transforms.ToTensor())
         if data == 'img' and 'rgb_mean' in self.preproc_cfg:
             transformations.append(
@@ -721,7 +722,7 @@ class DHF1KDataset(Dataset, utils.KwConfigClass):
         if dkey == 'frame':
             transformations.append(transforms.ToPILImage())
             transformations.append(transforms.Resize(
-                self.out_size, interpolation=PIL.Image.LANCZOS))
+                self.out_size, interpolation=InterpolationMode.LANCZOS))
         transformations.append(transforms.ToTensor())
         if dkey == 'frame' and 'rgb_mean' in self.preproc_cfg:
             transformations.append(
@@ -855,8 +856,8 @@ class HollywoodDataset(DHF1KDataset):
 
         vid_size = self.register['vid_size_dict'][vid_nr]
         if vid_size[0] != self.out_size[0]:
-            interpolation = PIL.Image.LANCZOS if dkey in ('frame', 'sal')\
-                else PIL.Image.NEAREST
+            interpolation = InterpolationMode.LANCZOS if dkey in ('frame', 'sal')\
+                else InterpolationMode.NEAREST
             size = (self.out_size[0],
                     int(vid_size[1] * self.out_size[0] / vid_size[0]))
             transformations.append(
@@ -890,7 +891,7 @@ class HollywoodDataset(DHF1KDataset):
             transformations.append(transforms.ToPILImage())
             transformations.append(
                 transforms.Resize(
-                    self.out_size, interpolation=PIL.Image.LANCZOS))
+                    self.out_size, interpolation=InterpolationMode.LANCZOS))
 
         transformations.append(transforms.ToTensor())
         if dkey == 'frame' and 'rgb_mean' in self.preproc_cfg:
@@ -1021,8 +1022,8 @@ class UCFSportsDataset(DHF1KDataset):
         ]
 
         vid_size = self.register['vid_size_dict'][vid_nr]
-        interpolation = PIL.Image.LANCZOS if dkey in ('frame', 'sal')\
-            else PIL.Image.NEAREST
+        interpolation = InterpolationMode.LANCZOS if dkey in ('frame', 'sal')\
+            else InterpolationMode.NEAREST
         out_size_ratio = self.out_size[1] / self.out_size[0]
         this_size_ratio = vid_size[1] / vid_size[0]
         if this_size_ratio < out_size_ratio:
@@ -1148,7 +1149,7 @@ class FolderVideoDataset(Dataset):
         transformations = []
         transformations.append(transforms.ToPILImage())
         transformations.append(transforms.Resize(
-            self.out_size, interpolation=PIL.Image.LANCZOS))
+            self.out_size, interpolation=InterpolationMode.LANCZOS))
         transformations.append(transforms.ToTensor())
         if 'rgb_mean' in self.preproc_cfg:
             transformations.append(
@@ -1211,7 +1212,7 @@ class FolderImageDataset(Dataset):
         transformations = [
             transforms.ToPILImage(),
             transforms.Resize(
-                out_size, interpolation=PIL.Image.LANCZOS),
+                out_size, interpolation=InterpolationMode.LANCZOS),
             transforms.ToTensor(),
         ]
         if 'rgb_mean' in self.preproc_cfg:

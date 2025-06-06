@@ -100,7 +100,7 @@ class ConvGRUCell(nn.Module):
             for idx, mask in self.yield_drop_masks():
                 self.register_buffer(self.mask_name(idx), mask)
         elif self.do_mode != "naive":
-            raise ValueError("Unknown dropout mode ", self.do_mode)
+            raise ValueError(f"Unknown dropout mode {self.do_mode}")
 
         # Instantiate the main weight matrices
         self.w_r = self._conv2d(self.input_ch, self.gate_ksize, bias=False)
@@ -165,7 +165,7 @@ class ConvGRUCell(nn.Module):
     def forward(self, x, h_tm1):
         # Initialize hidden state if necessary
         if h_tm1 is None:
-            h_tm1 = self._init_hidden(x, cuda=x.is_cuda)
+            h_tm1 = self._init_hidden(x)
 
         # Compute gate components
         r_x = self.w_r(self.apply_dropout(x, 0, 0))
@@ -215,7 +215,7 @@ class ConvGRUCell(nn.Module):
 
     @staticmethod
     def mask_name(idx):
-        return "drop_mask_{}".format(idx)
+        return f"drop_mask_{idx}"
 
     def set_drop_masks(self):
         """Set the dropout masks for the current sequence"""
@@ -234,12 +234,9 @@ class ConvGRUCell(nn.Module):
     def generate_do_mask(p, n, ch):
         """Generate a dropout mask for recurrent dropout"""
         with torch.no_grad():
+            # Create on CPU, will be moved with model.to(device) via register_buffer
             mask = Bernoulli(torch.full((n, ch), 1 - p)).sample() / (1 - p)
-            mask = (
-                mask.requires_grad_(False).cuda()
-                if torch.cuda.is_available()
-                else mask.requires_grad_(False).cpu()
-            )
+            mask.requires_grad_(False)
             return mask
 
     def apply_dropout(self, x, idx, sub_idx):
@@ -305,8 +302,7 @@ class ConvGRUCell(nn.Module):
         """Initialize the hidden state"""
         batch_size, _, height, width = input_.data.size()
         prev_state = torch.zeros(batch_size, self.hidden_ch, height, width)
-        if cuda:
-            prev_state = prev_state.cuda()
+        prev_state = prev_state.to(input_.device)
         return prev_state
 
 

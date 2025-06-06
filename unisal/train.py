@@ -338,12 +338,12 @@ class Trainer(utils.KwConfigClass):
                 loss_ / n_samples[src] for loss_ in running_loss_summands[src]
             ]
 
+            loss_summands_str = ", ".join(
+                f"loss_{idx}: {loss_:.4f}"
+                for idx, loss_ in enumerate(phase_loss_summands)
+            )
             print(
-                f"{src:9s}:   Phase: {self.phase}, loss: {phase_loss:.4f}, "
-                + ", ".join(
-                    f"loss_{idx}: {loss_:.4f}"
-                    for idx, loss_ in enumerate(phase_loss_summands)
-                )
+                f"{src:9s}:   Phase: {self.phase}, loss: {phase_loss:.4f}, {loss_summands_str}"
             )
 
             key = "conv" if src == "DHF1K" else src.lower()
@@ -802,14 +802,13 @@ class Trainer(utils.KwConfigClass):
                 )
                 scores.append(this_scores)
                 if vid_idx == 0:
+                    metrics_str = ", ".join(f"{metric:5s}" for metric in metrics)
                     print(
-                        f" Nr.   ( .../{len(vid_nr_array):4d}), "
-                        + ", ".join(f"{metric:5s}" for metric in metrics)
+                        f" Nr.   ( .../{len(vid_nr_array):4d}), {metrics_str}"
                     )
+                scores_str = ", ".join(f"{score:.3f}" for score in this_scores)
                 print(
-                    f"{vid_nr:6d} "
-                    + f"({vid_idx + 1:4d}/{len(vid_nr_array):4d}), "
-                    + ", ".join(f"{score:.3f}" for score in this_scores)
+                    f"{vid_nr:6d} ({vid_idx + 1:4d}/{len(vid_nr_array):4d}), {scores_str}"
                 )
 
         # Compute the average video scores
@@ -1136,7 +1135,7 @@ class Trainer(utils.KwConfigClass):
             dl = self.get_dataloader("test", "DHF1K")
             sample = next(iter(dl))
             _, x, _ = sample
-            x = x.float().cuda()
+            x = x.float().to(self.device)
             print(x.shape)
             x_0 = x[:1, :1, ...].clone().contiguous()
             output, h0 = self.model(x_0, return_hidden=True)
@@ -1160,7 +1159,7 @@ class Trainer(utils.KwConfigClass):
             # Measure the average time to process single frames on the GPU
             self.model.cpu()
             x = x.cpu()
-            h0 = [h0_.cpu() for h0_ in h0]
+            h0 = [h0_.to('cpu') for h0_ in h0]
             times = []
             torch.cuda.empty_cache()
             for t_idx in range(1, min(x.shape[1], 16)):
