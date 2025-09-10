@@ -129,6 +129,9 @@ class Trainer(utils.KwConfigClass):
         tboard=True,
         debug=False,
         new_instance=True,
+        use_wandb=False,
+        wandb_project="unisal",
+        wandb_entity=None,
     ):
         # Save training parameters
         self.num_epochs = num_epochs
@@ -177,6 +180,9 @@ class Trainer(utils.KwConfigClass):
         self.device = torch.device(device)
         self.tboard = tboard
         self.debug = debug
+        self.use_wandb = use_wandb
+        self.wandb_project = wandb_project
+        self.wandb_entity = wandb_entity
 
         if debug:
             self.num_workers = 0
@@ -226,6 +232,9 @@ class Trainer(utils.KwConfigClass):
         """
         Train the model
         """
+        
+        # Initialize WandB logging
+        self.init_wandb()
 
         # Print information about the trainer class to the terminal
         # pprint.pprint(self.asdict(), width=1)
@@ -247,6 +256,9 @@ class Trainer(utils.KwConfigClass):
 
         # Save the training data (losses, etc.)
         self.export_scalars()
+        
+        # Finish WandB logging
+        self.finish_wandb()
 
         return self.best_val_score
 
@@ -351,6 +363,16 @@ class Trainer(utils.KwConfigClass):
             self.add_scalar(f"{key}/loss/{self.phase}", phase_loss, self.epoch)
             for idx, loss_ in enumerate(phase_loss_summands):
                 self.add_scalar(f"{key}/loss_{idx}/{self.phase}", loss_, self.epoch)
+            
+            # Log to WandB
+            wandb_metrics = {
+                f"{key}/loss/{self.phase}": phase_loss,
+                f"epoch": self.epoch,
+                f"lr": self.optimizer.param_groups[0]["lr"] if hasattr(self, '_optimizer') else None
+            }
+            for idx, loss_ in enumerate(phase_loss_summands):
+                wandb_metrics[f"{key}/loss_{idx}/{self.phase}"] = loss_
+            self.log_wandb(wandb_metrics)
 
             if (
                 src == "DHF1K"
@@ -1085,6 +1107,9 @@ class Trainer(utils.KwConfigClass):
                     self.model.load_last_chkpnt(self.train_dir)
 
         # Run the fine tuning
+        # Initialize WandB logging for fine-tuning
+        self.init_wandb()
+        
         # pprint.pprint(self.asdict(), width=1)
         best_epoch = None
         best_val = None
@@ -1119,6 +1144,10 @@ class Trainer(utils.KwConfigClass):
             self.epoch += 1
 
         self.export_scalars()
+        
+        # Finish WandB logging
+        self.finish_wandb()
+        
         return best_val, best_epoch
 
     def get_dataset(self, phase, source="DHF1K"):
@@ -1463,3 +1492,82 @@ class Trainer(utils.KwConfigClass):
     @property
     def train_id(self):
         return "/".join(self.train_dir.parts[-2:])
+
+    def init_wandb(self):
+        """Initialize Weights & Biases logging"""
+        if not self.use_wandb:
+            return
+        
+        try:
+            import wandb
+            
+            # Create run config from training parameters
+            config = {
+                "num_epochs": self.num_epochs,
+                "lr": self.lr,
+                "batch_size": self.batch_size,
+                "optimizer": self.optim_algo,
+                "momentum": self.momentum,
+                "weight_decay": self.weight_decay,
+                "lr_scheduler": self.lr_scheduler,
+                "lr_gamma": self.lr_gamma,
+                "data_sources": self.data_sources,
+                "loss_metrics": self.loss_metrics,
+                "loss_weights": self.loss_weights,
+                "model_cfg": self.model_cfg,
+            }
+            
+            # Add fine-tuning specific config if applicable
+            if hasattr(self, 'mit1003_finetuned') and self.mit1003_finetuned:
+                config["fine_tuning"] = "MIT1003"
+                config["train_cnn_after"] = getattr(self, 'train_cnn_after', None)
+            
+            # Clean train_id for WandB (remove forbidden characters)
+            clean_id = self.train_id
+            forbidden_chars = ":;,#?/'"
+            for char in forbidden_chars:
+                clean_id = clean_id.replace(char, "_")
+            
+            # Initialize wandb
+            wandb.init(
+                project=self.wandb_project,
+                entity=self.wandb_entity,
+                config=config,
+                name=self.train_id,
+                resume="allow",
+                id=clean_id
+            )
+            
+            print(f"WandB initialized for project: {self.wandb_project}")
+            
+        except ImportError:
+            print("WandB not installed. Install with: pip install wandb")
+            self.use_wandb = False
+        except Exception as e:
+            print(f"WandB initialization failed: {e}")
+            self.use_wandb = False
+
+    def log_wandb(self, metrics_dict, step=None):
+        """Log metrics to WandB"""
+        if not self.use_wandb:
+            return
+            
+        try:
+            import wandb
+            if step is not None:
+                wandb.log(metrics_dict, step=step)
+            else:
+                wandb.log(metrics_dict)
+        except Exception as e:
+            print(f"WandB logging failed: {e}")
+
+    def finish_wandb(self):
+        """Finish WandB run"""
+        if not self.use_wandb:
+            return
+            
+        try:
+            import wandb
+            wandb.finish()
+        except Exception as e:
+            print(f"WandB finish failed: {e}")

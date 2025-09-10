@@ -1,3 +1,20 @@
+"""
+UNISAL Training and Evaluation Scripts
+
+WandB Integration:
+    To enable WandB logging, use the following parameters:
+    - use_wandb=True: Enable WandB logging
+    - wandb_project="your_project_name": Set WandB project name (default: "unisal")
+    - wandb_entity="your_entity": Set WandB entity/username (optional)
+
+Examples:
+    # Regular training with WandB
+    python run.py train --use_wandb=True --wandb_project="unisal_experiment"
+    
+    # Fine-tuning with WandB
+    python run.py train_finetune_mit --use_wandb=True --wandb_project="unisal_finetune"
+"""
+
 from pathlib import Path
 import os
 
