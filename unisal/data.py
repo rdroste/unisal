@@ -88,7 +88,7 @@ class SALICONDataset(Dataset, utils.KwConfigClass):
         return map
 
     def get_img(self, img_nr):
-        img_file = self.dir / 'images' / (
+        img_file = self.dir / 'images' / self.phase_str / (
                 self.file_stem + self.file_nr.format(img_nr) + '.jpg')
         img = cv2.imread(str(img_file))
         assert(img is not None)
@@ -125,7 +125,7 @@ class SALICONDataset(Dataset, utils.KwConfigClass):
 
     def prepare_samples(self):
         samples = []
-        for file in (self.dir / 'images').glob(self.file_stem + '*.jpg'):
+        for file in (self.dir / 'images' / self.phase_str).glob(self.file_stem + '*.jpg'):
             samples.append(int(file.stem[-12:]))
         return sorted(samples)
 
@@ -249,6 +249,9 @@ class MIT300Dataset(Dataset, utils.KwConfigClass):
             'rgb_std': (0.229, 0.224, 0.225),
         }
         self.samples, self.target_size_dict = self.load_data()
+        # For compatibility with video datasets
+        self.n_images_dict = {img_idx: 1 for img_idx in range(len(self.samples))}
+        self.n_samples = len(self.samples)
 
     def load_data(self):
         samples = []
@@ -363,6 +366,14 @@ class MIT1003Dataset(Dataset, utils.KwConfigClass):
                 self.samples = samples
 
         self.all_image_files, self.size_dict = self.load_data()
+        
+        # Adjust samples to match actual number of available images
+        actual_n_images = len(self.all_image_files)
+        if actual_n_images < self.n_train_val_images:
+            print(f"Warning: Expected {self.n_train_val_images} images but found {actual_n_images}")
+            # Filter samples to only include valid indices
+            self.samples = [s for s in self.samples if s < actual_n_images]
+            
         if self.subset is not None:
             self.samples = self.samples[:int(len(self.samples) * subset)]
         # For compatibility with video datasets
@@ -397,11 +408,11 @@ class MIT1003Dataset(Dataset, utils.KwConfigClass):
 
     @property
     def fix_dir(self):
-        return self.dir / 'ALLFIXATIONMAPS' / 'ALLFIXATIONMAPS'
+        return self.dir / 'ALLFIXATIONMAPS'
 
     @property
     def img_dir(self):
-        return self.dir / 'ALLSTIMULI' / 'ALLSTIMULI'
+        return self.dir / 'ALLSTIMULI'
 
     def get_out_size_eval(self, img_size):
         ar = img_size[0] / img_size[1]

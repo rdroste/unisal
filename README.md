@@ -105,7 +105,16 @@ python run.py train
 By default, this function computes the scores of the DHF1K and SALICON validation sets
 and the Hollywood-2 and UCF Sports test sets after the training is finished.
 The training data and scores are saved in the `training_runs` folder.
-Alternatively, the training path can be overwritten with the environment variable `TRAIN_DIR`. 
+Alternatively, the training path can be overwritten with the environment variable `TRAIN_DIR`.
+
+
+### Finetuning
+
+To finetune the model with the MIT1003 dataset for the MIT300 benchmark
+```bash
+python run.py train_finetune_mit
+```
+
 
 ### Scoring
 Any trained model can be scored with:

@@ -1,3 +1,20 @@
+"""
+UNISAL Training and Evaluation Scripts
+
+WandB Integration:
+    To enable WandB logging, use the following parameters:
+    - use_wandb=True: Enable WandB logging
+    - wandb_project="your_project_name": Set WandB project name (default: "unisal")
+    - wandb_entity="your_entity": Set WandB entity/username (optional)
+
+Examples:
+    # Regular training with WandB
+    python run.py train --use_wandb=True --wandb_project="unisal_experiment"
+    
+    # Fine-tuning with WandB
+    python run.py train_finetune_mit --use_wandb=True --wandb_project="unisal_finetune"
+"""
+
 from pathlib import Path
 import os
 
@@ -16,6 +33,15 @@ def train(eval_sources=('DHF1K', 'SALICON', 'UCFSports', 'Hollywood'),
         trainer.export_scalars()
         trainer.writer.close()
 
+def train_finetune_mit(eval_sources=('MIT300',),
+          **kwargs):
+    """Run training and evaluation."""
+    trainer = unisal.train.Trainer(**kwargs)
+    trainer.fine_tune_mit()
+    for source in eval_sources:
+        trainer.score_model(source=source)
+        trainer.export_scalars()
+        trainer.writer.close()
 
 def load_trainer(train_id=None):
     """Instantiate Trainer class from saved kwargs."""
