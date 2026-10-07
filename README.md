@@ -1,3 +1,7 @@
+# Archived
+
+This repository is no longer maintained.
+
 # Unified Image and Video Saliency Modeling
 
 
